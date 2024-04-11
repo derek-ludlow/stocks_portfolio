@@ -1,35 +1,36 @@
 const express = require('express');
-const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
+const path = require('path');
 
 const app = express();
 const PORT = 5000;
 
 app.use(bodyParser.json());
 
-// Connect to MongoDB (make sure MongoDB is running)
-mongoose.connect('mongodb://localhost/portfolio-tracker', { useNewUrlParser: true, useUnifiedTopology: true });
+// Serve static files from the 'public' directory
+app.use(express.static(path.join(__dirname, 'portfolio-tracker', 'public')));
 
-// Define Schema and Model for Stocks
-const stockSchema = new mongoose.Schema({
-  symbol: String,
-  quantity: Number,
-  purchasePrice: Number,
+// Serve favicon.ico separately to avoid decoding errors
+app.get('/favicon.ico', (req, res) => {
+  res.sendFile(path.join(__dirname, 'portfolio-tracker', 'public', 'favicon.ico'));
 });
 
-const Stock = mongoose.model('Stock', stockSchema);
-
-// Routes
-app.get('/stocks', async (req, res) => {
-  const stocks = await Stock.find();
-  res.json(stocks);
+// Endpoint to get all stocks
+app.get('/stocks', (req, res) => {
+  res.json(mockStocks);
 });
 
-app.post('/stocks', async (req, res) => {
+// Endpoint to add a new stock
+app.post('/stocks', (req, res) => {
   const { symbol, quantity, purchasePrice } = req.body;
-  const newStock = new Stock({ symbol, quantity, purchasePrice });
-  await newStock.save();
+  const newStock = { id: mockStocks.length + 1, symbol, quantity, purchasePrice };
+  mockStocks.push(newStock);
   res.json(newStock);
+});
+
+// Route for any other requests - serve the index.html file
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'portfolio-tracker', 'public', 'index.html'));
 });
 
 app.listen(PORT, () => {
